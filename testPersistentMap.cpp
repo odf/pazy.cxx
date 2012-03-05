@@ -2,8 +2,6 @@
 
 #include <unittest++/UnitTest++.h>
 
-#include <cassert>
-
 #include "PersistentMap.hpp"
 
 using namespace odf::hash_trie;
