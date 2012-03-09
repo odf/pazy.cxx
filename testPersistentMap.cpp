@@ -1,6 +1,7 @@
 /* -*-c++-*- */
 
-#include <unittest++/UnitTest++.h>
+// On Ubuntu, set CPLUS_INCLUDE_PATH to /usr/include/unittest++ for this!
+#include <UnitTest++.h>
 
 #include "PersistentMap.hpp"
 
