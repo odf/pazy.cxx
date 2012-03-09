@@ -163,51 +163,6 @@ private:
     mutable size_t counter_;
 };
 
-// ----------------------------------------------------------------------------
-// We use an empty node to avoid checking for null pointers
-// ----------------------------------------------------------------------------
-
-template<typename Key, typename Val>
-struct EmptyNode : public Node<Key, Val>
-{
-    typename Node<Key, Val>::ValPtr  typedef ValPtr;
-    typename Node<Key, Val>::NodePtr typedef NodePtr;
-
-    EmptyNode() {}
-
-    ~EmptyNode() {}
-
-    size_t size() const { return 0; }
-
-    bool isLeaf() const { return true; }
-
-    ValPtr get(indexType const shift,
-               hashType  const hash,
-               Key       const key) const
-    {
-        return ValPtr();
-    }
-
-    NodePtr insert(indexType const shift,
-                   hashType  const hash,
-                   NodePtr   const leaf) const
-    {
-        return leaf;
-    }
-
-    NodePtr remove(indexType const shift,
-                   hashType  const hash,
-                   Key       const key) const
-    {
-        return NodePtr(new EmptyNode());
-    }
-
-    std::string asString() const
-    {
-        return "{}";
-    }
-};
-
 
 // ----------------------------------------------------------------------------
 // A leaf node holds a single key,value pair
@@ -265,7 +220,7 @@ struct Leaf : public Node<Key, Val>
                    hashType  const hash,
                    Key       const key) const
     {
-        return NodePtr(new EmptyNode<Key, Val>());
+        return NodePtr();
     }
 
     Key const& key() const { return key_; }
@@ -463,7 +418,7 @@ struct ArrayNode : public Node<Key, Val>
     {
         indexType i = masked(hash, shift);
         NodePtr node = progeny_[i]->remove(shift+5, hash, key);
-        if (node->size() > 0)
+        if (node.get() and node->size() > 0)
         {
             return NodePtr(new ArrayNode(arrayUpdate(progeny_, 32, i, node),
                                          size() - 1));
@@ -632,7 +587,7 @@ struct BitmappedNode : public Node<Key, Val>
         size_t   newSize;
         NodePtr const*  newArray;
 
-        if (node->size() > 0)
+        if (node.get() and node->size() > 0)
         {
             newBitmap = bitmap_;
             newSize   = size() + node->size() - v->size();
@@ -696,18 +651,18 @@ public:
     typename Node<Key, Val>::NodePtr typedef NodePtr;
 
     PersistentMap()
-        : root_(new EmptyNode<Key, Val>())
+        : root_()
     {
     }
 
     size_t size() const
     {
-        return root_->size();
+        return root_.get() ? root_->size() : 0;
     }
 
     ValPtr get(Key const key) const
     {
-        return root_->get(0, hashFunc(key), key);
+        return root_.get() ? root_->get(0, hashFunc(key), key) : ValPtr();
     }
 
     Val getVal(Key const key, Val const notFound) const
@@ -722,22 +677,25 @@ public:
     PersistentMap const insert(Key const key, Val const val) const
     {
         hashType hash = hashFunc(key);
-        ValPtr current = root_->get(0, hash, key);
-        if (current.get() == 0 or *current != val)
+        NodePtr leaf(new Leaf<Key, Val>(hash, key, ValPtr(new Val(val))));
+        if (root_.get() == 0)
         {
-            NodePtr leaf(new Leaf<Key, Val>(hash, key, ValPtr(new Val(val))));
-            return PersistentMap(root_->insert(0, hash, leaf));
+            return PersistentMap(leaf);
         }
         else
         {
-            return *this;
+            ValPtr current = root_->get(0, hash, key);
+            if (current.get() == 0 or *current != val)
+                return PersistentMap(root_->insert(0, hash, leaf));
+            else
+                return *this;
         }
     }
 
     PersistentMap const remove(Key const key) const
     {
         hashType hash = hashFunc(key);
-        if (root_->get(0, hash, key).get() != 0)
+        if (root_.get() != 0 and root_->get(0, hash, key).get() != 0)
         {
             return PersistentMap(root_->remove(0, hash, key));
         }
@@ -750,7 +708,8 @@ public:
     std::string asString() const
     {
         std::stringstream ss;
-        ss << "PersistentMap(" << root_->asString() << ")";
+        ss << "PersistentMap(" <<
+            (root_.get() ? root_->asString() : "{}") << ")";
         return ss.str();
     }
 
