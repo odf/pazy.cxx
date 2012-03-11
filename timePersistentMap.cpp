@@ -123,6 +123,12 @@ int main(int argc, char** argv)
 {
     Stopwatch stopWatch;
 
+    if (argc < 2)
+    {
+        cerr << "Missing argument: number of items to insert." << endl;
+        return 1;
+    }
+
     int const N = atoi(argv[1]);
     size_t* values = new size_t[N];
 
