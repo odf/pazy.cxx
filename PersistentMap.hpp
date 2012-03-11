@@ -93,11 +93,10 @@ T const* arrayRemove(T const* source, int const len, int const pos)
 
 
 // ----------------------------------------------------------------------------
-// We need some forward declarations for hash trie node type
+// The classes BitmappedNode and ArrayNode reference each other, so we need to
+// forward declare one.
 // ----------------------------------------------------------------------------
 
-template<typename Key, typename Val> class Leaf;
-template<typename Key, typename Val> class CollisionNode;
 template<typename Key, typename Val> class BitmappedNode;
 
 // ----------------------------------------------------------------------------
@@ -163,86 +162,6 @@ private:
     mutable size_t counter_;
 };
 
-
-// ----------------------------------------------------------------------------
-// A leaf node holds a single key,value pair
-// ----------------------------------------------------------------------------
-
-template<typename Key, typename Val>
-struct Leaf : public Node<Key, Val>
-{
-    typename Node<Key, Val>::ValPtr  typedef ValPtr;
-    typename Node<Key, Val>::NodePtr typedef NodePtr;
-
-    Leaf(hashType const hash, Key const key, ValPtr const value)
-        : hash_(hash),
-          key_(key),
-          value_(value)
-    {
-    }
-
-    ~Leaf() {}
-
-    size_t size() const { return 1; }
-
-    bool isLeaf() const { return true; }
-
-    ValPtr get(indexType const shift,
-               hashType  const hash,
-               Key       const key) const
-    {
-        return key == key_ ? value_ : ValPtr();
-    }
-
-    NodePtr insert(indexType const shift,
-                   hashType  const hash,
-                   NodePtr   const leaf) const
-    {
-        if (key_ == leaf->key())
-        {
-            return leaf;
-        }
-        else
-        {
-            NodePtr base;
-            if (hash_ == hash)
-                base = NodePtr(new CollisionNode<Key, Val>(hash));
-            else
-                base = NodePtr(new BitmappedNode<Key, Val>());
-
-            return base
-                ->insert(shift, hash_, clone())
-                ->insert(shift, hash, leaf);
-        }
-    }
-
-    NodePtr remove(indexType const shift,
-                   hashType  const hash,
-                   Key       const key) const
-    {
-        return NodePtr();
-    }
-
-    Key const& key() const { return key_; }
-
-
-    std::string asString() const
-    {
-        std::stringstream ss;
-        ss << key_ << " -> " << *value_.get();
-        return ss.str();
-    }
-
-private:
-    hashType const hash_;
-    Key const key_;
-    ValPtr const value_;
-
-    NodePtr const clone() const
-    {
-        return NodePtr(new Leaf(*this));
-    }
-};
 
 // ----------------------------------------------------------------------------
 // A collision node holds several leaf nodes with equal hash codes.
@@ -637,6 +556,86 @@ private:
 };
 
 // ----------------------------------------------------------------------------
+// A leaf node holds a single key,value pair
+// ----------------------------------------------------------------------------
+
+template<typename Key, typename Val>
+struct MapLeaf : public Node<Key, Val>
+{
+    typename Node<Key, Val>::ValPtr  typedef ValPtr;
+    typename Node<Key, Val>::NodePtr typedef NodePtr;
+
+    MapLeaf(hashType const hash, Key const key, ValPtr const value)
+        : hash_(hash),
+          key_(key),
+          value_(value)
+    {
+    }
+
+    ~MapLeaf() {}
+
+    size_t size() const { return 1; }
+
+    bool isLeaf() const { return true; }
+
+    ValPtr get(indexType const shift,
+               hashType  const hash,
+               Key       const key) const
+    {
+        return key == key_ ? value_ : ValPtr();
+    }
+
+    NodePtr insert(indexType const shift,
+                   hashType  const hash,
+                   NodePtr   const leaf) const
+    {
+        if (key_ == leaf->key())
+        {
+            return leaf;
+        }
+        else
+        {
+            NodePtr base;
+            if (hash_ == hash)
+                base = NodePtr(new CollisionNode<Key, Val>(hash));
+            else
+                base = NodePtr(new BitmappedNode<Key, Val>());
+
+            return base
+                ->insert(shift, hash_, clone())
+                ->insert(shift, hash, leaf);
+        }
+    }
+
+    NodePtr remove(indexType const shift,
+                   hashType  const hash,
+                   Key       const key) const
+    {
+        return NodePtr();
+    }
+
+    Key const& key() const { return key_; }
+
+
+    std::string asString() const
+    {
+        std::stringstream ss;
+        ss << key_ << " -> " << *value_.get();
+        return ss.str();
+    }
+
+private:
+    hashType const hash_;
+    Key const key_;
+    ValPtr const value_;
+
+    NodePtr const clone() const
+    {
+        return NodePtr(new MapLeaf(*this));
+    }
+};
+
+// ----------------------------------------------------------------------------
 // The driver class
 // ----------------------------------------------------------------------------
 
@@ -674,7 +673,7 @@ public:
     PersistentMap const insert(Key const key, Val const val) const
     {
         hashType hash = hashFunc(key);
-        NodePtr leaf(new Leaf<Key, Val>(hash, key, ValPtr(new Val(val))));
+        NodePtr leaf(new MapLeaf<Key, Val>(hash, key, ValPtr(new Val(val))));
         if (not root_)
         {
             return PersistentMap(leaf);
