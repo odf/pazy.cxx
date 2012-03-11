@@ -128,11 +128,11 @@ int main(int argc, char** argv)
     }
 
     int const N = atoi(argv[1]);
-    size_t* values = new size_t[N];
+    size_t* values = new size_t[N + N / 2];
 
     srand(123456789);
 
-    for (int i = 0; i < N; ++i)
+    for (int i = 0; i < N + N / 2; ++i)
     {
         values[i] = rand();
     }
@@ -151,13 +151,13 @@ int main(int argc, char** argv)
 
     stopWatch.start();
 
-    bool exorA = 0.0;
-    for (int i = N / 2; i < N; ++i)
+    int countA = 0;
+    for (int i = N / 2; i < N + N / 2; ++i)
     {
-        exorA ^= set.contains(values[i]);
+        countA += set.contains(values[i]);
     }
 
-    cerr << "  Time for " << N/2 << " queries:    "
+    cerr << "  Time for " << N << " queries:    "
          << stopWatch.format() << endl;
 
     stopWatch.start();
@@ -166,17 +166,16 @@ int main(int argc, char** argv)
     for (int i = 0; i < N; i += 2)
         copy = copy.remove(values[i]);
 
-    cerr << "  Time for " << N/2 << " removals:   "
+    cerr << "  Time for " << N / 2 << " removals:   "
          << stopWatch.format() << endl;
 
     cerr << endl;
-
 
     cerr << "Boost unordered_set:" << endl;
 
     stopWatch.start();
 
-    unordered_set<int, int> bset;
+    unordered_set<int> bset;
 
     for (int i = 0; i < N; ++i)
         bset.insert(values[i]);
@@ -187,13 +186,13 @@ int main(int argc, char** argv)
 
     stopWatch.start();
 
-    bool exorB = 0.0;
-    for (int i = N / 2; i < N; ++i)
+    int countB = 0;
+    for (int i = N / 2; i < N + N / 2; ++i)
     {
-        exorB ^= bset.contains(values[i]);
+        countB += (bset.count(values[i]) > 0);
     }
 
-    cerr << "  Time for " << N/2 << " queries:    "
+    cerr << "  Time for " << N << " queries:    "
          << stopWatch.format() << endl;
 
     stopWatch.start();
@@ -201,11 +200,14 @@ int main(int argc, char** argv)
     for (int i = 0; i < N; i += 2)
         bset.erase(values[i]);
 
-    cerr << "  Time for " << N/2 << " removals:   "
+    cerr << "  Time for " << N / 2 << " removals:   "
          << stopWatch.format() << endl;
 
-    if (sumA != sumB)
-        cerr << "Sums don't match!" << endl;
+    if (countA != countB )
+        cerr << "Counts don't match: "
+             << countA << " for PersistentSet, "
+             << countB << " for unordered_set."
+             << endl;
 
     return 0;
 }

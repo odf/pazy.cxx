@@ -44,7 +44,7 @@ struct SetLeaf : public Node<Key, bool>
                hashType  const hash,
                Key       const key) const
     {
-        return ValPtr(key == key_);
+        return ValPtr(new bool(key == key_));
     }
 
     NodePtr insert(indexType const shift,
@@ -105,6 +105,7 @@ class PersistentSet
 {
 public:
     typename Node<Key, bool>::NodePtr typedef NodePtr;
+    typename Node<Key, bool>::ValPtr  typedef ValPtr;
 
     PersistentSet()
         : root_()
@@ -118,7 +119,7 @@ public:
 
     bool contains(Key const key) const
     {
-        return root_ && root_->get(0, hashFunc(key), key);
+        return found(hashFunc(key), key);
     }
 
     PersistentSet const insert(Key const key) const
@@ -127,7 +128,7 @@ public:
         NodePtr leaf(new SetLeaf<Key>(hash, key));
         if (not root_)
             return PersistentSet(leaf);
-        else if (not root_->get(0, hash, key))
+        else if (not found(hash, key))
             return PersistentSet(root_->insert(0, hash, leaf));
         else
             return *this;
@@ -136,7 +137,7 @@ public:
     PersistentSet const remove(Key const key) const
     {
         hashType hash = hashFunc(key);
-        if (root_ and root_->get(0, hash, key))
+        if (found(hash, key))
             return PersistentSet(root_->remove(0, hash, key));
         else
             return *this;
@@ -154,6 +155,19 @@ private:
     PersistentSet(NodePtr const root)
         : root_(root)
     {
+    }
+
+    bool found(hashType const hash, Key const key) const
+    {
+        if (root_)
+        {
+            ValPtr const result = root_->get(0, hashFunc(key), key);
+            return result && *result;
+        }
+        else
+        {
+            return false;
+        }
     }
 
     NodePtr root_;
