@@ -391,7 +391,7 @@ struct ArrayNode : public Node<Key, Val>
                Key       const key) const
     {
         indexType i = masked(hash, shift);
-        if (progeny_[i].get() != 0)
+        if (progeny_[i])
             return progeny_[i]->get(shift + 5, hash, key);
         else
             return ValPtr();
@@ -403,13 +403,10 @@ struct ArrayNode : public Node<Key, Val>
     {
         indexType i = masked(hash, shift);
         NodePtr oldNode = progeny_[i];
-        bool const recur = oldNode.get() != 0;
-
-        NodePtr newNode = recur ? oldNode->insert(shift+5, hash, leaf) : leaf;
-        size_t added = recur ? newNode->size() - oldNode->size() : leaf->size();
-
+        NodePtr newNode = oldNode ? oldNode->insert(shift+5, hash, leaf) : leaf;
+        size_t d = oldNode ? newNode->size() - oldNode->size() : leaf->size();
         return NodePtr(new ArrayNode(arrayUpdate(progeny_, 32, i, newNode),
-                                     size() + added));
+                                     size() + d));
     }
 
     NodePtr remove(indexType const shift,
@@ -418,7 +415,7 @@ struct ArrayNode : public Node<Key, Val>
     {
         indexType i = masked(hash, shift);
         NodePtr node = progeny_[i]->remove(shift+5, hash, key);
-        if (node.get() and node->size() > 0)
+        if (node and node->size() > 0)
         {
             return NodePtr(new ArrayNode(arrayUpdate(progeny_, 32, i, node),
                                          size() - 1));
@@ -428,7 +425,7 @@ struct ArrayNode : public Node<Key, Val>
             indexType count = 0;
             for (indexType j = 0; j < 32; ++j)
             {
-                if (j != i and progeny_[j].get() != 0)
+                if (j != i and progeny_[j])
                     ++count;
             }
             if (count <= 8)
@@ -438,7 +435,7 @@ struct ArrayNode : public Node<Key, Val>
                 indexType k = 0;
                 for (indexType j = 0; j < 32; ++j)
                 {
-                    if (j != i and progeny_[j].get() != 0)
+                    if (j != i and progeny_[j])
                     {
                         bitmap |= 1 << j;
                         remaining[k] = progeny_[j];
@@ -464,7 +461,7 @@ struct ArrayNode : public Node<Key, Val>
         int j = 0;
         for (int i = 0; i < 32; ++i)
         {
-            if (progeny_[i].get() != 0)
+            if (progeny_[i])
             {
                 if (j > 0)
                     ss << ", ";
@@ -587,7 +584,7 @@ struct BitmappedNode : public Node<Key, Val>
         size_t   newSize;
         NodePtr const*  newArray;
 
-        if (node.get() and node->size() > 0)
+        if (node and node->size() > 0)
         {
             newBitmap = bitmap_;
             newSize   = size() + node->size() - v->size();
@@ -657,18 +654,18 @@ public:
 
     size_t size() const
     {
-        return root_.get() ? root_->size() : 0;
+        return root_ ? root_->size() : 0;
     }
 
     ValPtr get(Key const key) const
     {
-        return root_.get() ? root_->get(0, hashFunc(key), key) : ValPtr();
+        return root_ ? root_->get(0, hashFunc(key), key) : ValPtr();
     }
 
     Val getVal(Key const key, Val const notFound) const
     {
         ValPtr vp = get(key);
-        if (vp.get() != 0)
+        if (vp)
             return *vp;
         else
             return notFound;
@@ -678,14 +675,14 @@ public:
     {
         hashType hash = hashFunc(key);
         NodePtr leaf(new Leaf<Key, Val>(hash, key, ValPtr(new Val(val))));
-        if (root_.get() == 0)
+        if (not root_)
         {
             return PersistentMap(leaf);
         }
         else
         {
             ValPtr current = root_->get(0, hash, key);
-            if (current.get() == 0 or *current != val)
+            if (not current or *current != val)
                 return PersistentMap(root_->insert(0, hash, leaf));
             else
                 return *this;
@@ -695,7 +692,7 @@ public:
     PersistentMap const remove(Key const key) const
     {
         hashType hash = hashFunc(key);
-        if (root_.get() != 0 and root_->get(0, hash, key).get() != 0)
+        if (root_ and root_->get(0, hash, key))
         {
             return PersistentMap(root_->remove(0, hash, key));
         }
@@ -709,7 +706,7 @@ public:
     {
         std::stringstream ss;
         ss << "PersistentMap(" <<
-            (root_.get() ? root_->asString() : "{}") << ")";
+            (root_ ? root_->asString() : "{}") << ")";
         return ss.str();
     }
 
