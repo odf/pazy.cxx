@@ -64,13 +64,20 @@ public:
             return "Real";
     }
     
-    void start()
+    void resume()
     {
         if (!isRunning_)
         {
-            start_ = time();
             isRunning_ = true;
+            start_ = time();
         }
+    }
+
+    void start()
+    {
+        accumulated_ = 0;
+        isRunning_ = true;
+        start_ = time();
     }
     
     void stop()
@@ -80,15 +87,6 @@ public:
             accumulated_ += time() - start_;
             isRunning_ = false;
         }
-    }
-    
-    void reset()
-    {
-    	accumulated_ = 0;
-    	if (isRunning_)
-        {
-    		start_ = time();
-    	}
     }
     
     /**
@@ -141,7 +139,6 @@ int main(int argc, char** argv)
 
     cerr << "Persistent map:" << endl;
 
-    stopWatch.reset();
     stopWatch.start();
 
     Map map;
@@ -149,11 +146,9 @@ int main(int argc, char** argv)
     for (int i = 0; i < N; ++i)
         map = map.insert(values[i], i);
 
-    stopWatch.stop();
     cerr << "  Time for " << N << " insertions: "
          << stopWatch.format() << endl;
 
-    stopWatch.reset();
     stopWatch.start();
 
     double sumA = 0.0;
@@ -162,18 +157,15 @@ int main(int argc, char** argv)
         sumA += map.getVal(values[i], 0);
     }
 
-    stopWatch.stop();
     cerr << "  Time for " << N/2 << " queries:    "
          << stopWatch.format() << endl;
 
-    stopWatch.reset();
     stopWatch.start();
 
     Map copy = map;
     for (int i = 0; i < N; i += 2)
         copy = copy.remove(values[i]);
 
-    stopWatch.stop();
     cerr << "  Time for " << N/2 << " removals:   "
          << stopWatch.format() << endl;
 
@@ -182,7 +174,6 @@ int main(int argc, char** argv)
 
     cerr << "Boost unordered_map:" << endl;
 
-    stopWatch.reset();
     stopWatch.start();
 
     unordered_map<int, int> bmap;
@@ -190,12 +181,10 @@ int main(int argc, char** argv)
     for (int i = 0; i < N; ++i)
         bmap[values[i]] = i;
 
-    stopWatch.stop();
 
     cerr << "  Time for " << N << " insertions: "
          << stopWatch.format() << endl;
 
-    stopWatch.reset();
     stopWatch.start();
 
     double sumB = 0.0;
@@ -204,17 +193,14 @@ int main(int argc, char** argv)
         sumB += bmap.at(values[i]);
     }
 
-    stopWatch.stop();
     cerr << "  Time for " << N/2 << " queries:    "
          << stopWatch.format() << endl;
 
-    stopWatch.reset();
     stopWatch.start();
 
     for (int i = 0; i < N; i += 2)
         bmap.erase(values[i]);
 
-    stopWatch.stop();
     cerr << "  Time for " << N/2 << " removals:   "
          << stopWatch.format() << endl;
 
