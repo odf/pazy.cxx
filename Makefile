@@ -22,5 +22,5 @@ depend:
 
 # DO NOT DELETE
 
-testPersistentMap.o: PersistentMap.hpp
-timePersistentMap.o: PersistentMap.hpp
+testPersistentMap.o: PersistentMap.hpp hash_trie.hpp
+timePersistentMap.o: PersistentMap.hpp hash_trie.hpp
