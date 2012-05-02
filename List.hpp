@@ -1,5 +1,5 @@
 #ifndef ODF_LIST_HPP
-#define ODF_LIST_HPP 1
+#define ODF_LIST_HPP
 
 #include <boost/iterator/iterator_facade.hpp>
 
@@ -24,24 +24,24 @@ private:
 public:
     typedef T value_type;
 
-    List() :
-        next_(),
-        is_empty_(true),
-        first_()
+    List()
+        : next_(),
+          is_empty_(true),
+          first_()
     {
     }
 
-    List(const T& first, const Ptr& next) :
-        next_(next),
-        is_empty_(false),
-        first_(first)
+    List(T const& first, Ptr const& next)
+        : next_(next),
+          is_empty_(false),
+          first_(first)
     {
     }
     
-    explicit List(const T& first) :
-        next_(),
-        is_empty_(false),
-        first_(first)
+    explicit List(T const& first)
+        : next_(),
+          is_empty_(false),
+          first_(first)
     {
     }
 
@@ -67,7 +67,7 @@ public:
         }
     }
 
-    bool operator==(const List& other) const
+    bool operator==(List const& other) const
     {
         return first_ == other.first_ and next_ == other.next_;
     }
@@ -84,26 +84,26 @@ public:
 };
 
 template<typename T>
-inline List<T> makeList(const T& first)
+inline List<T> makeList(T const& first)
 {
     return List<T>(first);
 }
 
 template<typename T>
-inline List<T> makeList(const T& first, const List<T>& rest)
+inline List<T> makeList(T const& first, List<T> const& rest)
 {
     return List<T>(first, Thunk<List<T> >(rest));
 }
 
 template<typename T, typename Functor>
-inline List<T> makeList(const T& first, const Functor code)
+inline List<T> makeList(T const& first, Functor const code)
 {
     return List<T>(first, makeThunk<List<T> >(code));
 }
 
 
 template<typename T>
-std::ostream& operator<<(std::ostream& out, const List<T>& list)
+std::ostream& operator<<(std::ostream& out, List<T> const& list)
 {
     if (!list.isEmpty())
     {
@@ -119,7 +119,7 @@ std::ostream& operator<<(std::ostream& out, const List<T>& list)
 template<typename T>
 class ListIterator
     : public boost::iterator_facade<ListIterator<T>,
-                                    const List<T>,
+                                    List<T> const,
                                     boost::forward_traversal_tag,
                                     T>
 {
@@ -129,7 +129,7 @@ class ListIterator
     {
     }
 
-    explicit ListIterator(const List<T>& list)
+    explicit ListIterator(List<T> const& list)
       : list_(list)
     {
     }
@@ -142,7 +142,7 @@ class ListIterator
         list_ = list_.rest();
     }
 
-    bool equal(const ListIterator& other) const
+    bool equal(ListIterator const& other) const
     {
         return this->list_ == other.list_;
     }
@@ -155,6 +155,6 @@ class ListIterator
     List<T> list_;
 };
 
-}
+} // namespace odf
 
 #endif // !ODF_LIST_HPP
