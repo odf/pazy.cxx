@@ -1,7 +1,8 @@
 CXXWARNS = -Wall -Wextra -pedantic
 CXXOPTS  = -g -O3
 CXXFLAGS = $(CXXWARNS) $(CXXOPTS)
-PROGRAMS = testPersistentMap timePersistentMap timePersistentSet testList
+PROGRAMS = testPersistentMap timePersistentMap timePersistentSet \
+	testList testFunctor
 
 all:	$(PROGRAMS)
 
@@ -17,6 +18,9 @@ timePersistentSet:	test/timePersistentSet.o
 testList:		test/testList.o
 	$(CXX) $(CXXFLAGS) $^ -o $@ -lgmp -lm -lUnitTest++
 
+testFunctor:		test/testFunctor.o
+	$(CXX) $(CXXFLAGS) $^ -o $@ -lUnitTest++
+
 clean:
 	rm -f *.o test/*.o Makefile.bak
 
@@ -26,7 +30,7 @@ distclean:	clean
 depend:
 	makedepend -Y. \
 	    test/testPersistentMap.cpp test/timePersistentMap.cpp \
-	    test/timePersistentSet.cpp test/testList.cpp
+	    test/timePersistentSet.cpp test/testList.cpp test/testFunctor.cpp
 
 # DO NOT DELETE
 
@@ -35,3 +39,4 @@ test/timePersistentMap.o: PersistentMap.hpp hash_trie.hpp
 test/timePersistentSet.o: PersistentSet.hpp hash_trie.hpp
 test/testList.o: Integer.h shared_array.hpp List.hpp Thunk.hpp nullstream.hpp
 test/testList.o: fun.hpp list_fun.hpp
+test/testFunctor.o: Functor.hpp

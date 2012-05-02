@@ -5,3 +5,4 @@ testPersistentMap
 timePersistentMap
 timePersistentSet
 testList
+testFunctor
