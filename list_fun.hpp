@@ -11,7 +11,7 @@ namespace odf
 template<typename T>
 List<T> listFrom(const T start)
 {
-    return makeList(start, curry(listFrom<T>, start + 1));
+    return makeList(start, bind(listFrom<T>, start + 1));
 }
 
 template<typename Iter>
@@ -42,7 +42,7 @@ List<T> arraySlice(T const a[], const int from, const int to)
     }
     else
     {
-        return makeList(a[from], curry(arraySlice<T>, a, from+1, to));
+        return makeList(a[from], bind(arraySlice<T>, a, from+1, to));
     }
 }
 
@@ -72,7 +72,7 @@ mapList(const L src, const F fun)
     else
     {
         return makeList(fun(src.first()),
-                        curry(compose(mapList<L, F>, &L::rest), src, fun));
+                        bind(compose(mapList<L, F>, &L::rest), src, fun));
    }
 }
 
@@ -86,7 +86,7 @@ L zipLists(const L lft, const L rgt, const F fun)
     else
     {
         return makeList(fun(lft.first(), rgt.first()),
-                        curry(compose(curry(compose(zipLists<L, F>, &L::rest),
+                        bind(compose(bind(compose(zipLists<L, F>, &L::rest),
                                             lft),
                                       &L::rest),
                               rgt, fun));
@@ -133,7 +133,7 @@ L filterList(const L src, const F pred)
     else
     {
         return makeList(p.first(),
-                        curry(compose(filterList<L, F>, &L::rest), p, pred));
+                        bind(compose(filterList<L, F>, &L::rest), p, pred));
     }
 }
 
@@ -147,7 +147,7 @@ L takeList(const L list, const int n)
     else
     {
         return makeList(list.first(),
-                        curry(compose(takeList<L>, &L::rest), list, n-1));
+                        bind(compose(takeList<L>, &L::rest), list, n-1));
     }
 }
 
@@ -240,7 +240,7 @@ L lazyConcat(const L a, const F b)
     else
     {
         return makeList(a.first(),
-                        curry(compose(lazyConcat<L, F>, &L::rest), a, b));
+                        bind(compose(lazyConcat<L, F>, &L::rest), a, b));
     }
 }
 
@@ -261,7 +261,7 @@ typename L::value_type flatten(const L list)
     {
         return lazyConcat<typename L::value_type>(
             list.first(),
-            curry(compose(flatten<L>, &L::rest), list));
+            bind(compose(flatten<L>, &L::rest), list));
     }
 }
 

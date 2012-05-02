@@ -570,7 +570,7 @@ struct currierTraits
 
 template<typename F>
 inline typename currierTraits<F>::result_type
-curry(
+bind(
     const F fun,
     const typename function_traits<F>::arg1_type arg)
 {
@@ -583,12 +583,12 @@ inline
 typename function_traits<
     typename currierTraits<F>::result_type
     >::currier_type
-curry(
+bind(
     const F fun,
     const typename function_traits<F>::arg1_type arg1,
     const typename function_traits<F>::arg2_type arg2)
 {
-    return curry(curry(fun, arg1), arg2);
+    return bind(bind(fun, arg1), arg2);
 }
 
 template<typename F>
@@ -598,13 +598,13 @@ typename function_traits<
         typename currierTraits<F>::result_type
         >::currier_type
     >::currier_type
-curry(
+bind(
     const F fun,
     const typename function_traits<F>::arg1_type arg1,
     const typename function_traits<F>::arg2_type arg2,
     const typename function_traits<F>::arg3_type arg3)
 {
-    return curry(curry(fun, arg1, arg2), arg3);
+    return bind(bind(fun, arg1, arg2), arg3);
 }
 
 template<typename Lft, typename Rgt>
@@ -641,7 +641,7 @@ T identity(const T val)
 template<typename T>
 inline typename function_traits<T(*)(T)>::currier_type constant(const T val)
 {
-    return curry(identity<T>, val);
+    return bind(identity<T>, val);
 }
 
 }
