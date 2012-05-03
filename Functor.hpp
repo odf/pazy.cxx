@@ -244,6 +244,11 @@ public:
     {
     }
 
+    Functor(boost::shared_ptr<Impl> impl, int const dummy)
+        : impl_(impl)
+    {
+    }
+
     R operator()()
     {
         return (*impl_)();
@@ -273,6 +278,52 @@ private:
     boost::shared_ptr<Impl> impl_;
 };
 
+
+// Binding
+
+template<typename Base>
+class Binder
+    : public FunctorImpl<typename Base::result_type,
+                         typename Base::arg_list::Tail>
+{
+    typedef typename Base::arg1_type A;
+
+public:
+    typedef typename Base::result_type result_type;
+
+    Binder(Base const& fun, A arg1)
+        : fun_(fun),
+          arg1_(arg1)
+    {
+    }
+
+    result_type operator()()
+    {
+        return fun_(arg1_);
+    }
+
+    result_type operator()(typename Base::arg2_type arg2)
+    {
+        return fun_(arg1_, arg2);
+    }
+
+    result_type operator()(typename Base::arg2_type arg2,
+                           typename Base::arg3_type arg3)
+    {
+        return fun_(arg1_, arg2, arg3);
+    }
+
+    result_type operator()(typename Base::arg2_type arg2,
+                           typename Base::arg3_type arg3,
+                           typename Base::arg4_type arg4)
+    {
+        return fun_(arg1_, arg2, arg3, arg4);
+    }
+
+private:
+    Base fun_;
+    A arg1_;
+};
 
 // Function traits
 
@@ -390,14 +441,66 @@ struct function_traits<R(K::*)(A, B)>
     typedef Functor<result_type, arg_list> functor_type;
 };
 
+template<typename R, class TList>
+struct function_traits<Functor<R, TList> >
+{
+    typedef R result_type;
+    typedef TList arg_list;
 
-// Convenience function for creating functors
+    typedef Functor<R, TList> wrapper_type;
+    typedef wrapper_type functor_type;
+
+    typedef typename functor_type::arg1_type arg1_type;
+    typedef typename functor_type::arg2_type arg2_type;
+    typedef typename functor_type::arg3_type arg3_type;
+    typedef typename functor_type::arg4_type arg4_type;
+    typedef typename functor_type::arg5_type arg5_type;
+};
+
+// Convenience functions for creating functors and binding arguments
 
 template<typename F>
-typename function_traits<F>::functor_type makeFunctor(F const& fun)
+typename function_traits<F>::functor_type bind(F const& fun)
 {
     typedef typename function_traits<F>::functor_type functor_type;
     typedef typename function_traits<F>::wrapper_type wrapper_type;
 
     return functor_type(static_cast<wrapper_type>(fun));
+}
+
+template<typename F>
+Functor<typename function_traits<F>::result_type,
+        typename function_traits<F>::arg_list::Tail>
+bind(F const& fun, typename function_traits<F>::arg1_type arg)
+{
+    typedef typename function_traits<F>::wrapper_type         wrapper_type;
+    typedef typename function_traits<F>::result_type          result_type;
+    typedef typename function_traits<F>::arg_list::Tail       arg_list;
+    typedef Binder<typename function_traits<F>::functor_type> binder_type;
+
+    return Functor<result_type, arg_list>(
+        boost::shared_ptr<binder_type>(
+            new binder_type(static_cast<wrapper_type>(fun), arg)),
+        1);
+}
+
+template<typename F>
+Functor<typename function_traits<F>::result_type,
+        typename function_traits<F>::arg_list::Tail::Tail>
+bind(F const& fun,
+     typename function_traits<F>::arg1_type arg1,
+     typename function_traits<F>::arg2_type arg2)
+{
+    return bind(bind(fun, arg1), arg2);
+}
+
+template<typename F>
+Functor<typename function_traits<F>::result_type,
+        typename function_traits<F>::arg_list::Tail::Tail::Tail>
+bind(F const& fun,
+     typename function_traits<F>::arg1_type arg1,
+     typename function_traits<F>::arg2_type arg2,
+     typename function_traits<F>::arg3_type arg3)
+{
+    return bind(bind(fun, arg1, arg2), arg3);
 }

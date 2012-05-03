@@ -61,15 +61,25 @@ SUITE(Functor)
 
     TEST(FunctionCall)
     {
-        CHECK_EQUAL(3.14, makeFunctor(plus)(3, .14));
-        CHECK_EQUAL(4, makeFunctor(plus)(3, 1));
+        CHECK_EQUAL(3.14, bind(plus)(3, .14));
+        CHECK_EQUAL(4, bind(plus)(3, 1));
     }
 
     TEST(MemberFunctionCall)
     {
         Plus f;
-        CHECK_EQUAL(42, makeFunctor(&Plus::theAnswer)(f));
-        CHECK_EQUAL(1.0, makeFunctor(&Plus::times)(f, 5, 0.2));
+        CHECK_EQUAL(42, bind(&Plus::theAnswer)(f));
+        CHECK_EQUAL(1.0, bind(&Plus::times)(f, 5, 0.2));
+    }
+
+    TEST(Binder)
+    {
+        Plus f;
+        CHECK_EQUAL(3.14, bind(plus, 3)(.14));
+        CHECK_EQUAL(3.14, bind(plus, 3, .14)());
+        CHECK_EQUAL(42, bind(&Plus::theAnswer, f)());
+        CHECK_EQUAL(1.0, bind(&Plus::times, f, 5)(0.2));
+        CHECK_EQUAL(1.0, bind(&Plus::times, f, 5, 0.2)());
     }
 }
 
