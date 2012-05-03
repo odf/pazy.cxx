@@ -84,11 +84,12 @@ SUITE(Functor)
     TEST(Composer)
     {
         CHECK_EQUAL(47, compose(bind(plus, 5), &Plus::theAnswer)(f));
-        CHECK_EQUAL(256, compose(bind(&Plus::times, f, 2),
+        CHECK_EQUAL(256, compose(bind(&Plus::times, f),
                                  bind(plus, -13),
                                  bind(&Plus::times, f, 3),
                                  bind(plus, 5),
-                                 &Plus::theAnswer)(f));
+                                 &Plus::theAnswer)(f, 2));
+        CHECK_EQUAL(47, bind(compose(plus, &Plus::theAnswer), f, 5)());
     }
 }
 

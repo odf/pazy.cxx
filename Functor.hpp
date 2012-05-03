@@ -61,19 +61,16 @@ struct TypeAt<Typelist<Head, Tail>, i>
     typedef typename TypeAt<Tail, i-1>::Result Result;
 };
 
-template<class TList1, class TList2>
-struct Concat;
-
-template<class TList2>
-struct Concat<NullType, TList2>
+template<typename T, class TL>
+struct Prepend
 {
-    typedef TList2 Result;
+    typedef Typelist<T, TL> Result;
 };
 
-template<class Head1, class Tail1, class TList2>
-struct Concat<Typelist<Head1, Tail1>, TList2>
+template<class TL>
+struct Prepend<NullType, TL>
 {
-    typedef Typelist<Head1, Concat<Tail1, TList2> > Result;
+    typedef TL Result;
 };
 
 }
@@ -349,7 +346,9 @@ private:
 template<class Fun1, class Fun2>
 class Composer
     : public FunctorImpl<typename Fun1::result_type,
-                         typename Fun2::arg_list>
+                         typename TL::Prepend<typename Fun2::arg_list::Head,
+                                              typename Fun1::arg_list::Tail>
+                         ::Result>
 {
 public:
     typedef typename Fun1::result_type result_type;
@@ -371,24 +370,24 @@ public:
     }
 
     result_type operator()(typename Fun2::arg1_type arg1,
-                           typename Fun2::arg2_type arg2)
+                           typename Fun1::arg2_type arg2)
     {
-        return fun1_(fun2_(arg1, arg2));
+        return fun1_(fun2_(arg1), arg2);
     }
 
     result_type operator()(typename Fun2::arg1_type arg1,
-                           typename Fun2::arg2_type arg2,
-                           typename Fun2::arg3_type arg3)
+                           typename Fun1::arg2_type arg2,
+                           typename Fun1::arg3_type arg3)
     {
-        return fun1_(fun2_(arg1, arg2, arg3));
+        return fun1_(fun2_(arg1), arg2, arg3);
     }
 
     result_type operator()(typename Fun2::arg1_type arg1,
-                           typename Fun2::arg2_type arg2,
-                           typename Fun2::arg3_type arg3,
-                           typename Fun2::arg4_type arg4)
+                           typename Fun1::arg2_type arg2,
+                           typename Fun1::arg3_type arg3,
+                           typename Fun1::arg4_type arg4)
     {
-        return fun1_(fun2_(arg1, arg2, arg3, arg4));
+        return fun1_(fun2_(arg1), arg2, arg3, arg4);
     }
 
 private:
@@ -618,14 +617,19 @@ bind(F const& fun,
 
 template<typename F1, typename F2>
 Functor<typename function_traits<F1>::result_type,
-        typename function_traits<F2>::arg_list>
+        typename TL::Prepend<typename function_traits<F2>::arg_list::Head,
+                             typename function_traits<F1>::arg_list::Tail>
+        ::Result>
 compose(F1 const& fun1, F2 const& fun2)
 {
     typedef typename function_traits<F1>::wrapper_type wrapper1;
     typedef typename function_traits<F2>::wrapper_type wrapper2;
 
-    typedef typename function_traits<F1>::result_type result_type;
-    typedef typename function_traits<F2>::arg_list    arg_list;
+    typedef typename function_traits<F1>::result_type    result_type;
+    typedef typename function_traits<F2>::arg1_type      arg1_type;
+    typedef typename function_traits<F1>::arg_list::Tail rest_args;
+
+    typedef typename TL::Prepend<arg1_type, rest_args>::Result arg_list;
 
     typedef Composer<typename function_traits<F1>::functor_type,
                      typename function_traits<F2>::functor_type> composer_type;
@@ -639,7 +643,9 @@ compose(F1 const& fun1, F2 const& fun2)
 
 template<typename F1, typename F2, typename F3>
 Functor<typename function_traits<F1>::result_type,
-        typename function_traits<F3>::arg_list>
+        typename TL::Prepend<typename function_traits<F3>::arg_list::Head,
+                             typename function_traits<F1>::arg_list::Tail>
+        ::Result>
 compose(F1 const& fun1, F2 const& fun2, F3 const& fun3)
 {
     return compose(fun1, compose(fun2, fun3));
@@ -647,7 +653,9 @@ compose(F1 const& fun1, F2 const& fun2, F3 const& fun3)
 
 template<typename F1, typename F2, typename F3, typename F4>
 Functor<typename function_traits<F1>::result_type,
-        typename function_traits<F4>::arg_list>
+        typename TL::Prepend<typename function_traits<F4>::arg_list::Head,
+                             typename function_traits<F1>::arg_list::Tail>
+        ::Result>
 compose(F1 const& fun1, F2 const& fun2, F3 const& fun3, F4 const& fun4)
 {
     return compose(fun1, compose(fun2, fun3, fun4));
@@ -655,7 +663,9 @@ compose(F1 const& fun1, F2 const& fun2, F3 const& fun3, F4 const& fun4)
 
 template<typename F1, typename F2, typename F3, typename F4, typename F5>
 Functor<typename function_traits<F1>::result_type,
-        typename function_traits<F5>::arg_list>
+        typename TL::Prepend<typename function_traits<F5>::arg_list::Head,
+                             typename function_traits<F1>::arg_list::Tail>
+        ::Result>
 compose(F1 const& fun1, F2 const& fun2,
         F3 const& fun3, F4 const& fun4, F5 const& fun5)
 {
