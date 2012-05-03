@@ -34,6 +34,16 @@ SUITE(Functor)
         {
             return i + d;
         }
+
+        long theAnswer()
+        {
+            return 42;
+        }
+
+        double times(int i, double d)
+        {
+            return i * d;
+        }
     };
 
     double plus(int i, double d)
@@ -51,9 +61,15 @@ SUITE(Functor)
 
     TEST(FunctionCall)
     {
-        Functor<double, TYPELIST_2(int, double)> cmd(&plus);
-        CHECK_EQUAL(3.14, cmd(3, .14));
-        CHECK_EQUAL(4, cmd(3, 1));
+        CHECK_EQUAL(3.14, makeFunctor(plus)(3, .14));
+        CHECK_EQUAL(4, makeFunctor(plus)(3, 1));
+    }
+
+    TEST(MemberFunctionCall)
+    {
+        Plus f;
+        CHECK_EQUAL(42, makeFunctor(&Plus::theAnswer)(f));
+        CHECK_EQUAL(1.0, makeFunctor(&Plus::times)(f, 5, 0.2));
     }
 }
 

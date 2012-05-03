@@ -71,7 +71,6 @@ class FunctorImpl<R, NullType>
 {
 public:
     virtual R operator()() = 0;
-    virtual FunctorImpl* Clone() const = 0;
     virtual ~FunctorImpl() {}
 };
 
@@ -80,7 +79,6 @@ class FunctorImpl<R, TYPELIST_1(A)>
 {
 public:
     virtual R operator()(A) = 0;
-    virtual FunctorImpl* Clone() const = 0;
     virtual ~FunctorImpl() {}
 };
 
@@ -89,7 +87,6 @@ class FunctorImpl<R, TYPELIST_2(A, B)>
 {
 public:
     virtual R operator()(A, B) = 0;
-    virtual FunctorImpl* Clone() const = 0;
     virtual ~FunctorImpl() {}
 };
 
@@ -98,12 +95,11 @@ class FunctorImpl<R, TYPELIST_3(A, B, C)>
 {
 public:
     virtual R operator()(A, B, C) = 0;
-    virtual FunctorImpl* Clone() const = 0;
     virtual ~FunctorImpl() {}
 };
 
 
-// Functor handlers
+// Default functor handlers
 
 template<class Parent, typename F>
 class FunctorHandler : public FunctorImpl<typename Parent::result_type,
@@ -115,11 +111,6 @@ public:
     FunctorHandler(F const& fun)
         : fun_(fun)
     {
-    }
-
-    FunctorHandler* Clone() const
-    {
-        return new FunctorHandler(*this);
     }
 
     result_type operator()()
@@ -158,6 +149,67 @@ private:
 };
 
 
+// Functor handlers for member functions
+
+template<class Parent, typename F>
+class MemFnHandler : public FunctorImpl<typename Parent::result_type,
+                                        typename Parent::arg_list>
+{
+public:
+    typedef typename Parent::result_type result_type;
+
+    MemFnHandler(F const& fun)
+        : fun_(fun)
+    {
+    }
+
+    result_type operator()(typename Parent::arg1_type a1)
+    {
+        return ((a1).*(fun_))();
+    }
+
+    result_type operator()(typename Parent::arg1_type a1,
+                           typename Parent::arg2_type a2)
+    {
+        return ((a1).*(fun_))(a2);
+    }
+
+    result_type operator()(typename Parent::arg1_type a1,
+                           typename Parent::arg2_type a2,
+                           typename Parent::arg3_type a3)
+    {
+        return ((a1).*(fun_))(a2, a3);
+    }
+
+    result_type operator()(typename Parent::arg1_type a1,
+                           typename Parent::arg2_type a2,
+                           typename Parent::arg3_type a3,
+                           typename Parent::arg4_type a4)
+    {
+        return ((a1).*(fun_))(a2, a3, a4);
+    }
+
+private:
+    F fun_;
+};
+
+
+// Wrapper class for tagging member functions
+
+template<typename F>
+struct MemFnWrapper
+{
+    typedef F base_type;
+
+    MemFnWrapper(F const& fun)
+        : value(fun)
+    {
+    }
+
+    F value;
+};
+
+
 // Functor classes
 
 template<typename R, class TList>
@@ -183,6 +235,12 @@ public:
     template<typename F>
     Functor(F const& fun)
         : impl_(new FunctorHandler<Functor, F>(fun))
+    {
+    }
+
+    template<typename F>
+    Functor(MemFnWrapper<F> const& fun)
+        : impl_(new MemFnHandler<Functor, F>(fun.value))
     {
     }
 
@@ -214,3 +272,132 @@ public:
 private:
     boost::shared_ptr<Impl> impl_;
 };
+
+
+// Function traits
+
+template<typename F>
+struct function_traits
+{
+    typedef F wrapper_type;
+};
+
+template<typename R>
+struct function_traits<R(*)()>
+{
+    typedef R result_type;
+    typedef NullType arg_list;
+
+    typedef Functor<result_type, arg_list> functor_type;
+};
+
+template<typename R>
+struct function_traits<R()> : function_traits<R (*)()>
+{
+    typedef R (*wrapper_type)();
+};
+
+template<typename R, typename A>
+struct function_traits<R(*)(A)>
+{
+    typedef R result_type;
+    typedef TYPELIST_1(A) arg_list;
+
+    typedef A arg1_type;
+
+    typedef Functor<result_type, arg_list> functor_type;
+};
+
+template<typename R, typename A>
+struct function_traits<R(A)> : function_traits<R (*)(A)>
+{
+    typedef R (*wrapper_type)(A);
+};
+
+template<typename R, typename A, typename B>
+struct function_traits<R(*)(A, B)>
+{
+    typedef R result_type;
+    typedef TYPELIST_2(A, B) arg_list;
+
+    typedef A arg1_type;
+    typedef B arg2_type;
+
+    typedef Functor<result_type, arg_list> functor_type;
+};
+
+template<typename R, typename A, typename B>
+struct function_traits<R(A, B)> : function_traits<R (*)(A, B)>
+{
+    typedef R (*wrapper_type)(A, B);
+};
+
+template<typename R, typename A, typename B, typename C>
+struct function_traits<R(*)(A, B, C)>
+{
+    typedef R result_type;
+    typedef TYPELIST_3(A, B, C) arg_list;
+
+    typedef A arg1_type;
+    typedef B arg2_type;
+    typedef C arg3_type;
+
+    typedef Functor<result_type, arg_list> functor_type;
+};
+
+template<typename R, typename A, typename B, typename C>
+struct function_traits<R(A, B, C)> : function_traits<R (*)(A, B, C)>
+{
+    typedef R (*wrapper_type)(A, B, C);
+};
+
+template<class K, typename R>
+struct function_traits<R(K::*)()>
+{
+    typedef R result_type;
+    typedef TYPELIST_1(K) arg_list;
+
+    typedef K arg1_type;
+
+    typedef MemFnWrapper<R(K::*)()> wrapper_type;
+    typedef Functor<result_type, arg_list> functor_type;
+};
+
+template<class K, typename R, typename A>
+struct function_traits<R(K::*)(A)>
+{
+    typedef R result_type;
+    typedef TYPELIST_2(K, A) arg_list;
+
+    typedef K arg1_type;
+    typedef A arg2_type;
+
+    typedef MemFnWrapper<R(K::*)(A)> wrapper_type;
+    typedef Functor<result_type, arg_list> functor_type;
+};
+
+template<class K, typename R, typename A, typename B>
+struct function_traits<R(K::*)(A, B)>
+{
+    typedef R result_type;
+    typedef TYPELIST_3(K, A, B) arg_list;
+
+    typedef K arg1_type;
+    typedef A arg2_type;
+    typedef B arg3_type;
+
+    typedef MemFnWrapper<R(K::*)(A, B)> wrapper_type;
+    typedef Functor<result_type, arg_list> functor_type;
+};
+
+
+// Convenience function for creating functors
+
+template<typename F>
+typename function_traits<F>::functor_type makeFunctor(F const& fun)
+{
+    typedef typename function_traits<F>::functor_type functor_type;
+    typedef typename function_traits<F>::wrapper_type wrapper_type;
+
+    return functor_type(static_cast<wrapper_type>(fun));
+}
