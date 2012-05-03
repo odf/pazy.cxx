@@ -28,20 +28,32 @@ SUITE(Typelist)
 
 SUITE(Functor)
 {
-    struct TestFunctor
+    struct Plus
     {
-        void operator()(int i, double d)
+        double operator()(int i, double d)
         {
-            std::cout << "TestFunctor::operator()(" << i
-                      << ", " << d << ") called." << std::endl;
+            return i + d;
         }
     };
 
-    TEST(SimpleCall)
+    double plus(int i, double d)
     {
-        TestFunctor f;
-        Functor<void, TYPELIST_2(int, double)> cmd(f);
-        cmd(4, 5);
+        return i + d;
+    }
+
+    TEST(FunctorCall)
+    {
+        Plus f;
+        Functor<double, TYPELIST_2(int, double)> cmd(f);
+        CHECK_EQUAL(3.14, cmd(3, .14));
+        CHECK_EQUAL(4, cmd(3, 1));
+    }
+
+    TEST(FunctionCall)
+    {
+        Functor<double, TYPELIST_2(int, double)> cmd(&plus);
+        CHECK_EQUAL(3.14, cmd(3, .14));
+        CHECK_EQUAL(4, cmd(3, 1));
     }
 }
 
