@@ -58,6 +58,21 @@ struct TypeAt<Typelist<Head, Tail>, i>
     typedef typename TypeAt<Tail, i-1>::Result Result;
 };
 
+template<class TList1, class TList2>
+struct Concat;
+
+template<class TList2>
+struct Concat<NullType, TList2>
+{
+    typedef TList2 Result;
+};
+
+template<class Head1, class Tail1, class TList2>
+struct Concat<Typelist<Head1, Tail1>, TList2>
+{
+    typedef Typelist<Head1, Concat<Tail1, TList2> > Result;
+};
+
 }
 
 
@@ -281,7 +296,7 @@ private:
 
 // Binding
 
-template<typename Base>
+template<class Base>
 class Binder
     : public FunctorImpl<typename Base::result_type,
                          typename Base::arg_list::Tail>
@@ -323,6 +338,59 @@ public:
 private:
     Base fun_;
     A arg1_;
+};
+
+
+// Composition
+
+template<class Fun1, class Fun2>
+class Composer
+    : public FunctorImpl<typename Fun1::result_type,
+                         typename Fun2::arg_list>
+{
+public:
+    typedef typename Fun1::result_type result_type;
+
+    Composer(Fun1 const& fun1, Fun2 const& fun2)
+        : fun1_(fun1),
+          fun2_(fun2)
+    {
+    }
+
+    result_type operator()()
+    {
+        return fun1_(fun2_());
+    }
+
+    result_type operator()(typename Fun2::arg1_type arg1)
+    {
+        return fun1_(fun2_(arg1));
+    }
+
+    result_type operator()(typename Fun2::arg1_type arg1,
+                           typename Fun2::arg2_type arg2)
+    {
+        return fun1_(fun2_(arg1, arg2));
+    }
+
+    result_type operator()(typename Fun2::arg1_type arg1,
+                           typename Fun2::arg2_type arg2,
+                           typename Fun2::arg3_type arg3)
+    {
+        return fun1_(fun2_(arg1, arg2, arg3));
+    }
+
+    result_type operator()(typename Fun2::arg1_type arg1,
+                           typename Fun2::arg2_type arg2,
+                           typename Fun2::arg3_type arg3,
+                           typename Fun2::arg4_type arg4)
+    {
+        return fun1_(fun2_(arg1, arg2, arg3, arg4));
+    }
+
+private:
+    Fun1 fun1_;
+    Fun2 fun2_;
 };
 
 // Function traits
@@ -457,15 +525,13 @@ struct function_traits<Functor<R, TList> >
     typedef typename functor_type::arg5_type arg5_type;
 };
 
+
 // Convenience functions for creating functors and binding arguments
 
 template<typename F>
 typename function_traits<F>::functor_type bind(F const& fun)
 {
-    typedef typename function_traits<F>::functor_type functor_type;
-    typedef typename function_traits<F>::wrapper_type wrapper_type;
-
-    return functor_type(static_cast<wrapper_type>(fun));
+    return static_cast<typename function_traits<F>::wrapper_type>(fun);
 }
 
 template<typename F>
@@ -503,4 +569,53 @@ bind(F const& fun,
      typename function_traits<F>::arg3_type arg3)
 {
     return bind(bind(fun, arg1, arg2), arg3);
+}
+
+
+// Convenience functions for functor composition
+
+template<typename F1, typename F2>
+Functor<typename function_traits<F1>::result_type,
+        typename function_traits<F2>::arg_list>
+compose(F1 const& fun1, F2 const& fun2)
+{
+    typedef typename function_traits<F1>::wrapper_type wrapper1;
+    typedef typename function_traits<F2>::wrapper_type wrapper2;
+
+    typedef typename function_traits<F1>::result_type result_type;
+    typedef typename function_traits<F2>::arg_list    arg_list;
+
+    typedef Composer<typename function_traits<F1>::functor_type,
+                     typename function_traits<F2>::functor_type> composer_type;
+
+    return Functor<result_type, arg_list>(
+        boost::shared_ptr<composer_type>(
+            new composer_type(static_cast<wrapper1>(fun1),
+                              static_cast<wrapper2>(fun2))),
+        1);
+}
+
+template<typename F1, typename F2, typename F3>
+Functor<typename function_traits<F1>::result_type,
+        typename function_traits<F3>::arg_list>
+compose(F1 const& fun1, F2 const& fun2, F3 const& fun3)
+{
+    return compose(fun1, compose(fun2, fun3));
+}
+
+template<typename F1, typename F2, typename F3, typename F4>
+Functor<typename function_traits<F1>::result_type,
+        typename function_traits<F4>::arg_list>
+compose(F1 const& fun1, F2 const& fun2, F3 const& fun3, F4 const& fun4)
+{
+    return compose(fun1, compose(fun2, fun3, fun4));
+}
+
+template<typename F1, typename F2, typename F3, typename F4, typename F5>
+Functor<typename function_traits<F1>::result_type,
+        typename function_traits<F5>::arg_list>
+compose(F1 const& fun1, F2 const& fun2,
+        F3 const& fun3, F4 const& fun4, F5 const& fun5)
+{
+    return compose(fun1, compose(fun2, fun3, fun4, fun5));
 }
