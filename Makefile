@@ -38,5 +38,5 @@ test/testPersistentMap.o: PersistentMap.hpp hash_trie.hpp
 test/timePersistentMap.o: PersistentMap.hpp hash_trie.hpp
 test/timePersistentSet.o: PersistentSet.hpp hash_trie.hpp
 test/testList.o: Integer.h shared_array.hpp List.hpp Thunk.hpp nullstream.hpp
-test/testList.o: fun.hpp list_fun.hpp
+test/testList.o: Functor.hpp list_fun.hpp
 test/testFunctor.o: Functor.hpp

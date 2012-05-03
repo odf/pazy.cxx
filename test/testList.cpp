@@ -6,7 +6,7 @@
 
 #include "Integer.h"
 #include "List.hpp"
-#include "fun.hpp"
+#include "Functor.hpp"
 #include "list_fun.hpp"
 
 using namespace odf;

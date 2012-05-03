@@ -672,4 +672,19 @@ compose(F1 const& fun1, F2 const& fun2,
     return compose(fun1, compose(fun2, fun3, fun4, fun5));
 }
 
+
+// Some useful functions
+
+template<typename T>
+T identity(const T val)
+{
+    return val;
+}
+
+template<typename T>
+inline typename function_traits<T(*)(T)>::currier_type constant(const T val)
+{
+    return bind(identity<T>, val);
+}
+
 #endif // ODF_FUNCTOR

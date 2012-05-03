@@ -3,7 +3,7 @@
 
 #include <functional>
 #include "List.hpp"
-#include "fun.hpp"
+#include "Functor.hpp"
 
 namespace odf
 {
