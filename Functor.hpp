@@ -1,5 +1,8 @@
 // Functor library following Alexandrescu's "Modern C++ Design"
 
+#ifndef ODF_FUNCTOR
+#define ODF_FUNCTOR
+
 #include "boost/smart_ptr.hpp"
 
 // Typelists
@@ -482,6 +485,18 @@ struct function_traits<R(K::*)()>
     typedef Functor<result_type, arg_list> functor_type;
 };
 
+template<class K, typename R>
+struct function_traits<R(K::*)() const>
+{
+    typedef R result_type;
+    typedef TYPELIST_1(K) arg_list;
+
+    typedef K arg1_type;
+
+    typedef MemFnWrapper<R(K::*)() const> wrapper_type;
+    typedef Functor<result_type, arg_list> functor_type;
+};
+
 template<class K, typename R, typename A>
 struct function_traits<R(K::*)(A)>
 {
@@ -492,6 +507,19 @@ struct function_traits<R(K::*)(A)>
     typedef A arg2_type;
 
     typedef MemFnWrapper<R(K::*)(A)> wrapper_type;
+    typedef Functor<result_type, arg_list> functor_type;
+};
+
+template<class K, typename R, typename A>
+struct function_traits<R(K::*)(A) const>
+{
+    typedef R result_type;
+    typedef TYPELIST_2(K, A) arg_list;
+
+    typedef K arg1_type;
+    typedef A arg2_type;
+
+    typedef MemFnWrapper<R(K::*)(A) const> wrapper_type;
     typedef Functor<result_type, arg_list> functor_type;
 };
 
@@ -506,6 +534,20 @@ struct function_traits<R(K::*)(A, B)>
     typedef B arg3_type;
 
     typedef MemFnWrapper<R(K::*)(A, B)> wrapper_type;
+    typedef Functor<result_type, arg_list> functor_type;
+};
+
+template<class K, typename R, typename A, typename B>
+struct function_traits<R(K::*)(A, B) const>
+{
+    typedef R result_type;
+    typedef TYPELIST_3(K, A, B) arg_list;
+
+    typedef K arg1_type;
+    typedef A arg2_type;
+    typedef B arg3_type;
+
+    typedef MemFnWrapper<R(K::*)(A, B) const> wrapper_type;
     typedef Functor<result_type, arg_list> functor_type;
 };
 
@@ -619,3 +661,5 @@ compose(F1 const& fun1, F2 const& fun2,
 {
     return compose(fun1, compose(fun2, fun3, fun4, fun5));
 }
+
+#endif // ODF_FUNCTOR

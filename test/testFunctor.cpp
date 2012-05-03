@@ -35,7 +35,7 @@ SUITE(Functor)
             return i + d;
         }
 
-        long theAnswer()
+        long theAnswer() const
         {
             return 42;
         }
